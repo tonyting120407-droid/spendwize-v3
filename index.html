@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SpendWize Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero-card" aria-labelledby="app-title">
+        <div>
+          <p class="eyebrow">Personal finance command center</p>
+          <h1 id="app-title">SpendWize</h1>
+          <p class="hero-copy">
+            Track income, taxes, daily spending, and your remaining budget in one clean front-page view.
+          </p>
+        </div>
+        <div class="hero-actions" aria-label="App navigation">
+          <button id="showDashboardButton" class="ghost-action hidden" type="button">Back to dashboard</button>
+          <button id="toggleInterface" class="primary-action" type="button">Open editing interface</button>
+          <button id="viewHistoryButton" class="ghost-action" type="button">View transaction history</button>
+        </div>
+      </section>
+
+      <section id="dashboardView" class="interface active" aria-labelledby="dashboard-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Dashboard</p>
+            <h2 id="dashboard-title">Monthly snapshot</h2>
+          </div>
+          <p id="lastUpdated" class="muted">Ready for your first update</p>
+        </div>
+
+        <div class="metrics-grid" aria-label="Financial summary">
+          <article class="metric-card income">
+            <span>Monthly income</span>
+            <strong id="monthlyIncome">$0.00</strong>
+            <small>Gross earnings before tax</small>
+          </article>
+          <article class="metric-card taxes">
+            <span>After taxes</span>
+            <strong id="afterTaxes">$0.00</strong>
+            <small id="taxRateLabel">Tax rate: 0%</small>
+          </article>
+          <article class="metric-card spending">
+            <span>Total spending</span>
+            <strong id="totalSpending">$0.00</strong>
+            <small>All tracked expenses</small>
+          </article>
+          <article class="metric-card remaining">
+            <span>Money left to spend</span>
+            <strong id="moneyLeft">$0.00</strong>
+            <small id="remainingHint">After taxes and expenses</small>
+          </article>
+        </div>
+
+        <div class="quick-entry-grid">
+          <article class="panel quick-entry-panel" aria-labelledby="daily-expense-title">
+            <div class="panel-heading">
+              <div>
+                <h3 id="daily-expense-title">Add daily expenditure</h3>
+                <p class="panel-copy compact">Enter an item and cost. SpendWize will auto-sort it into categories like food, accessories, transportation, and more.</p>
+              </div>
+              <button id="quickHistoryButton" class="ghost-action" type="button">View transaction history</button>
+            </div>
+            <form id="dailyExpenseForm" class="quick-expense-form">
+              <label>
+                Item name
+                <input id="dailyExpenseName" name="dailyExpenseName" type="text" placeholder="Coffee, headphones, bus pass" />
+              </label>
+              <label>
+                Cost
+                <input id="dailyExpenseAmount" name="dailyExpenseAmount" type="number" min="0" step="0.01" placeholder="12.50" />
+              </label>
+              <button class="secondary-action" type="submit">Add and auto-sort</button>
+            </form>
+            <p id="autoSortMessage" class="auto-sort-message" role="status" aria-live="polite"></p>
+          </article>
+        </div>
+
+        <div class="content-grid">
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Spending categories</h3>
+                <p class="panel-copy compact">Categories update automatically as tracked expenses are added.</p>
+              </div>
+              <button id="addTrackedExpenseButton" class="ghost-action" type="button">Add tracked expense</button>
+            </div>
+            <span id="categoryCount" class="pill">0 categories</span>
+            <div id="categoryBreakdown" class="category-list"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Budget health</h3>
+              <span id="healthStatus" class="pill success">Balanced</span>
+            </div>
+            <div class="progress-wrap" aria-label="Spending progress">
+              <div id="spendingProgress" class="progress-bar"></div>
+            </div>
+            <p id="budgetMessage" class="panel-copy">Add income and expenses to see your monthly budget health.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="editorView" class="interface" aria-labelledby="editor-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Editing interface</p>
+            <h2 id="editor-title">Update your money details</h2>
+          </div>
+          <button id="resetData" class="ghost-action" type="button">Reset demo data</button>
+        </div>
+
+        <form id="financeForm" class="editor-grid">
+          <fieldset class="panel form-panel">
+            <legend>Earnings and taxes</legend>
+            <label>
+              Monthly income
+              <input id="incomeInput" name="income" type="number" min="0" step="0.01" placeholder="4500" />
+            </label>
+            <label>
+              Tax rate (%)
+              <input id="taxInput" name="tax" type="number" min="0" max="100" step="0.1" placeholder="22" />
+            </label>
+          </fieldset>
+
+          <fieldset class="panel form-panel">
+            <legend>Add or edit tracked expense</legend>
+            <label>
+              Expense name
+              <input id="expenseName" name="expenseName" type="text" placeholder="Groceries" />
+            </label>
+            <label>
+              Category
+              <select id="expenseCategory" name="expenseCategory"></select>
+            </label>
+            <label>
+              Amount
+              <input id="expenseAmount" name="expenseAmount" type="number" min="0" step="0.01" placeholder="85.50" />
+            </label>
+            <button id="saveExpenseButton" class="secondary-action" type="submit">Save updates</button>
+            <button id="cancelEditButton" class="ghost-action hidden" type="button">Cancel expense edit</button>
+          </fieldset>
+        </form>
+
+        <article class="panel expense-panel">
+          <div class="panel-heading">
+            <h3>Tracked expenses</h3>
+            <span id="expenseCount" class="pill">0 items</span>
+          </div>
+          <ul id="expenseList" class="expense-list"></ul>
+        </article>
+      </section>
+
+      <section id="historyView" class="interface" aria-labelledby="history-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Transaction history</p>
+            <h2 id="history-title">Every tracked transaction</h2>
+          </div>
+          <button id="historyBackButton" class="primary-action" type="button">Back to dashboard</button>
+        </div>
+        <article class="panel history-panel">
+          <div class="panel-heading">
+            <h3>Recent transactions</h3>
+            <span id="historyCount" class="pill">0 transactions</span>
+          </div>
+          <ul id="historyList" class="history-list"></ul>
+        </article>
+      </section>
+    </main>
+
+    <template id="expenseItemTemplate">
+      <li class="expense-item">
+        <div>
+          <strong class="expense-title"></strong>
+          <span class="expense-meta"></span>
+        </div>
+        <div class="expense-actions">
+          <span class="expense-value"></span>
+          <button class="edit-expense" type="button">Edit</button>
+          <button class="delete-expense" type="button">Remove</button>
+        </div>
+      </li>
+    </template>
+
+    <script src="script.js"></script>
+  </body>
+</html>
