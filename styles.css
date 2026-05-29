@@ -1,0 +1,200 @@
+:root {
+  color-scheme: light;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bg: #eef4ff;
+  --card: #ffffff;
+  --ink: #132238;
+  --muted: #667085;
+  --line: #dde6f3;
+  --primary: #3763ff;
+  --primary-dark: #2246bd;
+  --success: #0f9f6e;
+  --warning: #d9822b;
+  --danger: #d92d20;
+  --shadow: 0 24px 70px rgba(32, 54, 94, 0.14);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(55, 99, 255, 0.22), transparent 36rem),
+    linear-gradient(135deg, #f7fbff 0%, var(--bg) 100%);
+}
+
+button,
+input,
+select { font: inherit; }
+
+button { cursor: pointer; }
+
+.app-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0 48px;
+}
+
+.hero-card,
+.panel,
+.metric-card {
+  border: 1px solid rgba(221, 230, 243, 0.85);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.hero-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 34px;
+  border-radius: 32px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3 { margin: 0; line-height: 1.05; }
+
+h1 { font-size: clamp(2.5rem, 8vw, 5rem); letter-spacing: -0.08em; }
+h2 { font-size: clamp(1.8rem, 4vw, 3rem); letter-spacing: -0.05em; }
+h3 { font-size: 1.1rem; }
+
+.hero-copy {
+  max-width: 620px;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.primary-action,
+.secondary-action,
+.ghost-action,
+.edit-expense,
+.delete-expense {
+  border: 0;
+  border-radius: 999px;
+  font-weight: 800;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.primary-action,
+.secondary-action {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 12px 28px rgba(55, 99, 255, 0.3);
+}
+
+.primary-action { padding: 16px 22px; white-space: nowrap; }
+.secondary-action { padding: 14px 18px; width: 100%; }
+.ghost-action,
+.delete-expense { color: var(--primary-dark); background: #edf2ff; padding: 11px 15px; }
+.edit-expense { color: var(--primary-dark); background: #edf2ff; padding: 11px 15px; }
+.delete-expense { color: var(--danger); background: #fff1f0; }
+.hidden { display: none; }
+
+button:hover { transform: translateY(-1px); }
+
+.interface { display: none; margin-top: 28px; }
+.interface.active { display: block; }
+
+.section-heading,
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.muted { color: var(--muted); }
+
+.metrics-grid,
+.content-grid,
+.editor-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.metrics-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.content-grid,
+.editor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 18px; }
+
+.metric-card,
+.panel {
+  border-radius: 24px;
+  padding: 24px;
+}
+
+.metric-card span,
+.metric-card small,
+.expense-meta { color: var(--muted); }
+.metric-card strong { display: block; margin: 12px 0 8px; font-size: clamp(1.55rem, 3vw, 2.35rem); letter-spacing: -0.05em; }
+.metric-card.income { border-top: 5px solid var(--primary); }
+.metric-card.taxes { border-top: 5px solid #7c3aed; }
+.metric-card.spending { border-top: 5px solid var(--warning); }
+.metric-card.remaining { border-top: 5px solid var(--success); }
+.metric-card.remaining.negative { border-top-color: var(--danger); }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 7px 11px;
+  color: var(--muted);
+  background: #f4f7fb;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.pill.success { color: var(--success); background: #e9fbf4; }
+.pill.warning { color: var(--warning); background: #fff6e8; }
+.pill.danger { color: var(--danger); background: #fff1f0; }
+
+.category-list { display: grid; gap: 12px; }
+.category-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+.category-track { grid-column: 1 / -1; height: 10px; overflow: hidden; border-radius: 999px; background: #edf2f7; }
+.category-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), #18b6a5); }
+.empty-state { color: var(--muted); margin: 0; padding: 20px; border: 1px dashed var(--line); border-radius: 18px; background: #f8fbff; }
+
+.progress-wrap { height: 18px; overflow: hidden; border-radius: 999px; background: #e7edf7; }
+.progress-bar { width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--success), #70d878); transition: width 220ms ease, background 220ms ease; }
+.panel-copy { color: var(--muted); line-height: 1.6; }
+
+fieldset { margin: 0; border: 0; }
+legend { margin-bottom: 18px; font-size: 1.1rem; font-weight: 800; }
+label { display: grid; gap: 8px; margin-bottom: 16px; color: #344054; font-weight: 700; }
+input,
+select { width: 100%; border: 1px solid var(--line); border-radius: 16px; padding: 13px 14px; color: var(--ink); background: #fbfdff; outline: none; }
+input:focus,
+select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(55, 99, 255, 0.12); }
+
+.expense-panel { margin-top: 18px; }
+.expense-list { display: grid; gap: 12px; padding: 0; margin: 0; list-style: none; }
+.expense-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: #fbfdff; }
+.expense-title { display: block; margin-bottom: 4px; }
+.expense-actions { display: flex; align-items: center; gap: 12px; }
+.expense-value { font-weight: 800; white-space: nowrap; }
+
+@media (max-width: 860px) {
+  .hero-card,
+  .section-heading,
+  .panel-heading,
+  .expense-item { align-items: flex-start; flex-direction: column; }
+  .metrics-grid,
+  .content-grid,
+  .editor-grid { grid-template-columns: 1fr; }
+  .primary-action { width: 100%; }
+  .expense-actions { width: 100%; justify-content: space-between; }
+}
