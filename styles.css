@@ -189,17 +189,20 @@ button:hover { transform: translateY(-1px); }
 .quick-expense-form,
 .goals-form {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(150px, 0.7fr) auto;
   gap: 14px;
   align-items: end;
 }
 
+.quick-expense-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.quick-expense-form .secondary-action { grid-column: 1 / -1; }
 .goals-form { grid-template-columns: 1fr 1fr auto; }
 .quick-expense-form label,
 .goals-form label { margin-bottom: 0; }
 .auto-sort-message { min-height: 1.5rem; margin: 14px 0 0; color: var(--success); font-weight: 800; }
-.goal-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+.danger-text { color: var(--danger); font-weight: 800; }
+.goal-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
 .goal-summary p { margin: 0; padding: 14px; border-radius: 18px; background: #f8fbff; border: 1px solid var(--line); }
+.goal-summary p.danger-tile { border-color: rgba(217, 45, 32, 0.35); background: #fff1f0; }
 .goal-summary strong { display: block; margin-bottom: 4px; font-size: 1.25rem; }
 .goal-summary span { color: var(--muted); font-size: 0.84rem; font-weight: 700; }
 
@@ -220,6 +223,10 @@ select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(55, 99, 
 .expense-title,
 .history-item strong { display: block; margin-bottom: 4px; }
 .expense-actions { display: flex; align-items: center; gap: 12px; }
+.inline-editor-item { display: block; }
+.inline-edit-form { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 12px; align-items: end; width: 100%; }
+.inline-edit-form label { margin-bottom: 0; }
+.inline-edit-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .expense-value,
 .history-amount { font-weight: 800; white-space: nowrap; }
 .history-item span { color: var(--muted); }
@@ -233,7 +240,8 @@ select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(55, 99, 
   .history-grid,
   .quick-expense-form,
   .goals-form,
-  .goal-summary { grid-template-columns: 1fr; }
+  .goal-summary,
+  .inline-edit-form { grid-template-columns: 1fr; }
   .hero-actions { justify-content: flex-start; }
 }
 

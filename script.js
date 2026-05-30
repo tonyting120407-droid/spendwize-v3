@@ -25,11 +25,14 @@ const defaultData = {
   taxRate: 21,
   savingsGoal: 600,
   dailyBudget: 35,
+  creditLimit: 1200,
+  creditPayback: 250,
   expenses: [
     { id: createId(), type: "fixed", name: "Rent", category: "Housing", amount: 1450, cadence: "monthly", date: now() },
     { id: createId(), type: "fixed", name: "Electric fee", category: "Utilities", amount: 120, cadence: "monthly", date: now() },
     { id: createId(), type: "fixed", name: "Car insurance", category: "Insurance", amount: 1200, cadence: "yearly", date: now() },
-    { id: createId(), type: "daily", name: "Groceries", category: "Food", amount: 42.5, date: now() },
+    { id: createId(), type: "daily", name: "Groceries", category: "Food", amount: 42.5, paidWithCredit: false, date: now() },
+    { id: createId(), type: "daily", name: "Headphones", category: "Accessories", amount: 89, paidWithCredit: true, date: now() },
   ],
   updatedAt: now(),
 };
@@ -38,7 +41,6 @@ let state = loadState();
 let editingFixedPaymentId = null;
 
 const elements = {
-  showDashboardButton: document.querySelector("#showDashboardButton"),
   toggleInterface: document.querySelector("#toggleInterface"),
   viewHistoryButton: document.querySelector("#viewHistoryButton"),
   dashboardView: document.querySelector("#dashboardView"),
@@ -58,6 +60,7 @@ const elements = {
   dailyExpenseForm: document.querySelector("#dailyExpenseForm"),
   dailyExpenseName: document.querySelector("#dailyExpenseName"),
   dailyExpenseAmount: document.querySelector("#dailyExpenseAmount"),
+  dailyExpenseCredit: document.querySelector("#dailyExpenseCredit"),
   autoSortMessage: document.querySelector("#autoSortMessage"),
   goalsForm: document.querySelector("#goalsForm"),
   savingsGoalInput: document.querySelector("#savingsGoalInput"),
@@ -65,15 +68,18 @@ const elements = {
   savingsGoalDisplay: document.querySelector("#savingsGoalDisplay"),
   dailyBudgetDisplay: document.querySelector("#dailyBudgetDisplay"),
   averageDailyDisplay: document.querySelector("#averageDailyDisplay"),
+  creditAvailableDisplay: document.querySelector("#creditAvailableDisplay"),
   financeForm: document.querySelector("#financeForm"),
   incomeInput: document.querySelector("#incomeInput"),
   taxInput: document.querySelector("#taxInput"),
+  creditLimitInput: document.querySelector("#creditLimitInput"),
+  creditPaybackInput: document.querySelector("#creditPaybackInput"),
+  creditStatus: document.querySelector("#creditStatus"),
   expenseName: document.querySelector("#expenseName"),
   expenseCategory: document.querySelector("#expenseCategory"),
   expenseCadence: document.querySelector("#expenseCadence"),
   expenseAmount: document.querySelector("#expenseAmount"),
   saveExpenseButton: document.querySelector("#saveExpenseButton"),
-  cancelEditButton: document.querySelector("#cancelEditButton"),
   expenseList: document.querySelector("#expenseList"),
   expenseCount: document.querySelector("#expenseCount"),
   dailyHistoryList: document.querySelector("#dailyHistoryList"),
@@ -94,6 +100,7 @@ function normalizeExpense(expense) {
     category: expense.category || fallbackCategory,
     amount: Number(expense.amount) || 0,
     cadence: type === "fixed" && expense.cadence === "yearly" ? "yearly" : "monthly",
+    paidWithCredit: type === "daily" ? Boolean(expense.paidWithCredit) : false,
     date: expense.date || expense.createdAt || now(),
   };
 }
@@ -111,6 +118,8 @@ function loadState() {
       taxRate: Number(parsed.taxRate) || 0,
       savingsGoal: Number(parsed.savingsGoal) || 0,
       dailyBudget: Number(parsed.dailyBudget) || 0,
+      creditLimit: Number(parsed.creditLimit) || 0,
+      creditPayback: Number(parsed.creditPayback) || 0,
       expenses: Array.isArray(parsed.expenses) ? parsed.expenses.map(normalizeExpense) : [],
       updatedAt: parsed.updatedAt || now(),
     };
@@ -152,14 +161,20 @@ function getSortedExpenses(expenses) {
 }
 
 function calculateSummary() {
-  const dailySpent = getDailyExpenses().reduce((sum, expense) => sum + Number(expense.amount), 0);
+  const dailyExpenses = getDailyExpenses();
+  const dailySpent = dailyExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+  const creditSpent = dailyExpenses.filter((expense) => expense.paidWithCredit).reduce((sum, expense) => sum + Number(expense.amount), 0);
+  const cashDailySpent = dailySpent - creditSpent;
   const fixedMonthlyTotal = getFixedPayments().reduce((sum, expense) => sum + monthlyValue(expense), 0);
   const totalSpent = dailySpent + fixedMonthlyTotal;
   const afterTaxes = Math.max(state.income - state.income * (state.taxRate / 100), 0);
-  const moneyLeft = afterTaxes - totalSpent - state.savingsGoal;
+  const creditAvailable = Math.max(state.creditLimit - creditSpent, 0);
+  const creditOverage = Math.max(creditSpent - state.creditLimit, 0);
+  const cashCommitted = fixedMonthlyTotal + cashDailySpent + state.creditPayback + state.savingsGoal;
+  const moneyLeft = afterTaxes - cashCommitted;
   const averageDailySpend = dailySpent / new Date().getDate();
 
-  return { afterTaxes, dailySpent, fixedMonthlyTotal, totalSpent, moneyLeft, averageDailySpend };
+  return { afterTaxes, dailySpent, creditSpent, cashDailySpent, fixedMonthlyTotal, totalSpent, creditAvailable, creditOverage, cashCommitted, moneyLeft, averageDailySpend };
 }
 
 function categorizeExpense(itemName) {
@@ -175,25 +190,25 @@ function getDailyCategoryTotals() {
   }, {});
 }
 
-function populateCategoryOptions() {
-  elements.expenseCategory.innerHTML = "";
+function populateCategoryOptions(select = elements.expenseCategory, selectedCategory) {
+  select.innerHTML = "";
   FIXED_CATEGORIES.forEach((category) => {
     const option = document.createElement("option");
     option.value = category;
     option.textContent = category;
-    elements.expenseCategory.append(option);
+    option.selected = category === selectedCategory;
+    select.append(option);
   });
 }
 
 function renderDashboard() {
-  const { afterTaxes, dailySpent, fixedMonthlyTotal, totalSpent, moneyLeft, averageDailySpend } = calculateSummary();
-  const usedWithGoal = totalSpent + state.savingsGoal;
-  const spendingRatio = afterTaxes > 0 ? Math.min((usedWithGoal / afterTaxes) * 100, 100) : 0;
+  const { afterTaxes, dailySpent, creditSpent, cashDailySpent, fixedMonthlyTotal, totalSpent, creditAvailable, creditOverage, cashCommitted, moneyLeft, averageDailySpend } = calculateSummary();
+  const spendingRatio = afterTaxes > 0 ? Math.min((cashCommitted / afterTaxes) * 100, 100) : 0;
 
   elements.totalSpending.textContent = currency(totalSpent);
-  elements.totalSpendingHint.textContent = `${currency(dailySpent)} daily + ${currency(fixedMonthlyTotal)} fixed payments this month`;
+  elements.totalSpendingHint.textContent = `${currency(dailySpent)} daily (${currency(creditSpent)} on credit) + ${currency(fixedMonthlyTotal)} fixed payments`;
   elements.moneyLeft.textContent = currency(moneyLeft);
-  elements.remainingHint.textContent = moneyLeft >= 0 ? "Available after fixed payments and saving goal" : "Over budget after fixed payments and saving goal";
+  elements.remainingHint.textContent = `${currency(cashDailySpent)} cash/debit daily + ${currency(state.creditPayback)} credit payback + fixed payments + saving goal`;
   elements.moneyLeft.closest(".metric-card").classList.toggle("negative", moneyLeft < 0);
   elements.lastUpdated.textContent = `Last updated ${new Date(state.updatedAt).toLocaleString()}`;
 
@@ -202,6 +217,8 @@ function renderDashboard() {
   elements.savingsGoalDisplay.textContent = currency(state.savingsGoal);
   elements.dailyBudgetDisplay.textContent = currency(state.dailyBudget);
   elements.averageDailyDisplay.textContent = currency(averageDailySpend);
+  elements.creditAvailableDisplay.textContent = currency(creditAvailable);
+  elements.creditAvailableDisplay.closest("p").classList.toggle("danger-tile", creditOverage > 0);
 
   elements.spendingProgress.style.width = `${spendingRatio}%`;
   elements.spendingProgress.style.background = spendingRatio > 90
@@ -211,17 +228,19 @@ function renderDashboard() {
       : "linear-gradient(90deg, #0f9f6e, #70d878)";
 
   const overDailyBudget = state.dailyBudget > 0 && averageDailySpend > state.dailyBudget;
-  const statusClass = spendingRatio > 90 || moneyLeft < 0 || overDailyBudget ? "danger" : spendingRatio > 70 ? "warning" : "success";
+  const statusClass = spendingRatio > 90 || moneyLeft < 0 || overDailyBudget || creditOverage > 0 ? "danger" : spendingRatio > 70 ? "warning" : "success";
   const statusText = statusClass === "danger" ? "Needs attention" : statusClass === "warning" ? "Watch closely" : "Balanced";
   elements.healthStatus.className = `pill ${statusClass}`;
   elements.healthStatus.textContent = statusText;
 
   if (afterTaxes === 0) {
-    elements.budgetMessage.textContent = "Enter monthly income in fixed payments to calculate money left to spend.";
+    elements.budgetMessage.textContent = "Enter monthly income in advanced mode to calculate money left to spend.";
+  } else if (creditOverage > 0) {
+    elements.budgetMessage.textContent = `Your credit purchases exceed your monthly credit limit by ${currency(creditOverage)}.`;
   } else if (overDailyBudget) {
     elements.budgetMessage.textContent = `Your average daily spend is ${currency(averageDailySpend)}, above your ${currency(state.dailyBudget)} daily budget.`;
   } else {
-    elements.budgetMessage.textContent = `${currency(usedWithGoal)} of your ${currency(afterTaxes)} after-tax income is assigned to spending and savings.`;
+    elements.budgetMessage.textContent = `${currency(cashCommitted)} of your ${currency(afterTaxes)} after-tax income is committed to cash spending, credit payback, fixed payments, and savings.`;
   }
 
   renderCategories(dailySpent);
@@ -263,8 +282,15 @@ function renderCategories(dailySpent) {
 
 function renderEditor() {
   const fixedPayments = getSortedExpenses(getFixedPayments());
+  const { creditSpent, creditAvailable, creditOverage } = calculateSummary();
   elements.incomeInput.value = state.income || "";
   elements.taxInput.value = state.taxRate || "";
+  elements.creditLimitInput.value = state.creditLimit || "";
+  elements.creditPaybackInput.value = state.creditPayback || "";
+  elements.creditStatus.textContent = creditOverage > 0
+    ? `${currency(creditSpent)} in credit purchases is ${currency(creditOverage)} over your monthly credit limit.`
+    : `${currency(creditSpent)} in credit purchases leaves ${currency(creditAvailable)} of available credit this month.`;
+  elements.creditStatus.classList.toggle("danger-text", creditOverage > 0);
   elements.expenseCount.textContent = `${fixedPayments.length} ${fixedPayments.length === 1 ? "payment" : "payments"}`;
   elements.expenseList.innerHTML = "";
 
@@ -277,14 +303,101 @@ function renderEditor() {
   }
 
   fixedPayments.forEach((expense) => {
-    const item = elements.expenseTemplate.content.firstElementChild.cloneNode(true);
-    item.querySelector(".expense-title").textContent = expense.name;
-    item.querySelector(".expense-meta").textContent = `${expense.category} • ${capitalize(expense.cadence)} payment • ${currency(monthlyValue(expense))}/month value`;
-    item.querySelector(".expense-value").textContent = `${currency(Number(expense.amount))}/${expense.cadence === "yearly" ? "yr" : "mo"}`;
-    item.querySelector(".edit-expense").addEventListener("click", () => editFixedPayment(expense.id));
-    item.querySelector(".delete-expense").addEventListener("click", () => removeExpense(expense.id));
+    const item = editingFixedPaymentId === expense.id ? createInlineEditor(expense) : createFixedPaymentItem(expense);
     elements.expenseList.append(item);
   });
+}
+
+function createFixedPaymentItem(expense) {
+  const item = elements.expenseTemplate.content.firstElementChild.cloneNode(true);
+  item.querySelector(".expense-title").textContent = expense.name;
+  item.querySelector(".expense-meta").textContent = `${expense.category} • ${capitalize(expense.cadence)} payment • ${currency(monthlyValue(expense))}/month value`;
+  item.querySelector(".expense-value").textContent = `${currency(Number(expense.amount))}/${expense.cadence === "yearly" ? "yr" : "mo"}`;
+  item.querySelector(".edit-expense").addEventListener("click", () => {
+    editingFixedPaymentId = expense.id;
+    renderEditor();
+  });
+  item.querySelector(".delete-expense").addEventListener("click", () => removeExpense(expense.id));
+  return item;
+}
+
+function createInlineEditor(expense) {
+  const item = document.createElement("li");
+  item.className = "expense-item inline-editor-item";
+  const form = document.createElement("form");
+  form.className = "inline-edit-form";
+
+  const nameLabel = createInputLabel("Payment name", "text", expense.name);
+  const amountLabel = createInputLabel("Amount", "number", expense.amount);
+  amountLabel.input.min = "0";
+  amountLabel.input.step = "0.01";
+
+  const categoryLabel = document.createElement("label");
+  categoryLabel.textContent = "Category";
+  const categorySelect = document.createElement("select");
+  populateCategoryOptions(categorySelect, expense.category);
+  categoryLabel.append(categorySelect);
+
+  const cadenceLabel = document.createElement("label");
+  cadenceLabel.textContent = "Payment schedule";
+  const cadenceSelect = document.createElement("select");
+  ["monthly", "yearly"].forEach((cadence) => {
+    const option = document.createElement("option");
+    option.value = cadence;
+    option.textContent = capitalize(cadence);
+    option.selected = cadence === expense.cadence;
+    cadenceSelect.append(option);
+  });
+  cadenceLabel.append(cadenceSelect);
+
+  const actions = document.createElement("div");
+  actions.className = "inline-edit-actions";
+  const saveButton = document.createElement("button");
+  saveButton.className = "secondary-action";
+  saveButton.type = "submit";
+  saveButton.textContent = "Save changes";
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "ghost-action";
+  cancelButton.type = "button";
+  cancelButton.textContent = "Cancel";
+  cancelButton.addEventListener("click", () => {
+    editingFixedPaymentId = null;
+    renderEditor();
+  });
+  actions.append(saveButton, cancelButton);
+
+  form.append(nameLabel.label, amountLabel.label, categoryLabel, cadenceLabel, actions);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    updateFixedPayment(expense.id, {
+      name: nameLabel.input.value.trim() || expense.name,
+      amount: Math.max(Number(amountLabel.input.value) || 0, 0),
+      category: categorySelect.value,
+      cadence: cadenceSelect.value,
+    });
+  });
+  item.append(form);
+  return item;
+}
+
+function createInputLabel(text, type, value) {
+  const label = document.createElement("label");
+  label.textContent = text;
+  const input = document.createElement("input");
+  input.type = type;
+  input.value = value;
+  label.append(input);
+  return { label, input };
+}
+
+function updateFixedPayment(id, fixedPayment) {
+  if (fixedPayment.amount <= 0) {
+    return;
+  }
+  state.expenses = state.expenses.map((expense) => expense.id === id ? { ...expense, ...fixedPayment } : expense);
+  editingFixedPaymentId = null;
+  saveState();
+  renderApp();
 }
 
 function renderHistory() {
@@ -295,7 +408,7 @@ function renderHistory() {
     singular: "transaction",
     plural: "transactions",
     emptyText: "No daily expenditures yet. Add one from the dashboard.",
-    meta: (expense) => `${expense.category} • Auto-sorted • ${formatDate(expense.date)}`,
+    meta: (expense) => `${expense.category} • ${expense.paidWithCredit ? "Credit card" : "Cash/debit"} • ${formatDate(expense.date)}`,
     value: (expense) => currency(expense.amount),
   });
 
@@ -305,7 +418,7 @@ function renderHistory() {
     items: getSortedExpenses(getFixedPayments()),
     singular: "payment",
     plural: "payments",
-    emptyText: "No fixed payments yet. Add rent, electricity, subscriptions, or yearly fees from the fixed payments page.",
+    emptyText: "No fixed payments yet. Add rent, electricity, subscriptions, or yearly fees from advanced mode.",
     meta: (expense) => `${expense.category} • ${capitalize(expense.cadence)} • ${currency(monthlyValue(expense))}/month value`,
     value: (expense) => `${currency(expense.amount)}/${expense.cadence === "yearly" ? "yr" : "mo"}`,
   });
@@ -360,8 +473,7 @@ function showView(viewName) {
     element.classList.toggle("active", name === viewName);
   });
 
-  elements.showDashboardButton.classList.toggle("hidden", viewName === "dashboard");
-  elements.toggleInterface.textContent = viewName === "editor" ? "Back to dashboard" : "Open fixed payments";
+  elements.toggleInterface.textContent = viewName === "editor" ? "Back to dashboard" : "Open advanced mode";
 }
 
 function handleEditorToggle() {
@@ -382,25 +494,21 @@ function handleFinanceSubmit(event) {
 
   state.income = Math.max(Number(elements.incomeInput.value) || 0, 0);
   state.taxRate = Math.min(Math.max(Number(elements.taxInput.value) || 0, 0), 100);
+  state.creditLimit = Math.max(Number(elements.creditLimitInput.value) || 0, 0);
+  state.creditPayback = Math.max(Number(elements.creditPaybackInput.value) || 0, 0);
 
   const name = elements.expenseName.value.trim();
   const amount = Number(elements.expenseAmount.value);
   if (name && amount > 0) {
-    const fixedPayment = {
+    state.expenses.push({
+      id: createId(),
+      date: now(),
       name,
       category: elements.expenseCategory.value,
       cadence: elements.expenseCadence.value,
       amount,
       type: "fixed",
-    };
-
-    if (editingFixedPaymentId) {
-      state.expenses = state.expenses.map((expense) => expense.id === editingFixedPaymentId
-        ? { ...expense, ...fixedPayment }
-        : expense);
-    } else {
-      state.expenses.push({ id: createId(), date: now(), ...fixedPayment });
-    }
+    });
     clearFixedPaymentForm();
   }
 
@@ -419,38 +527,24 @@ function handleDailyExpenseSubmit(event) {
   }
 
   const category = categorizeExpense(name);
+  const paidWithCredit = elements.dailyExpenseCredit.value === "true";
   state.expenses.push({
     id: createId(),
     type: "daily",
     name,
     category,
     amount,
+    paidWithCredit,
     date: now(),
     cadence: "monthly",
   });
   elements.dailyExpenseName.value = "";
   elements.dailyExpenseAmount.value = "";
-  elements.autoSortMessage.textContent = `Added ${currency(amount)} for “${name}” and auto-sorted it into ${category}.`;
+  elements.dailyExpenseCredit.value = "false";
+  elements.autoSortMessage.textContent = `Added ${currency(amount)} for “${name}” as ${paidWithCredit ? "a credit card" : "a cash/debit"} purchase and auto-sorted it into ${category}.`;
 
   saveState();
   renderApp();
-}
-
-function editFixedPayment(id) {
-  const expense = getFixedPayments().find((item) => item.id === id);
-  if (!expense) {
-    return;
-  }
-
-  editingFixedPaymentId = id;
-  elements.expenseName.value = expense.name;
-  elements.expenseCategory.value = expense.category;
-  elements.expenseCadence.value = expense.cadence;
-  elements.expenseAmount.value = expense.amount;
-  elements.saveExpenseButton.textContent = "Update fixed payment";
-  elements.cancelEditButton.classList.remove("hidden");
-  showView("editor");
-  elements.expenseName.focus();
 }
 
 function clearFixedPaymentForm() {
@@ -459,7 +553,6 @@ function clearFixedPaymentForm() {
   elements.expenseAmount.value = "";
   elements.expenseCadence.value = "monthly";
   elements.saveExpenseButton.textContent = "Save fixed payment";
-  elements.cancelEditButton.classList.add("hidden");
 }
 
 function removeExpense(id) {
@@ -485,7 +578,6 @@ function capitalize(value) {
 }
 
 populateCategoryOptions();
-elements.showDashboardButton.addEventListener("click", () => showView("dashboard"));
 elements.toggleInterface.addEventListener("click", handleEditorToggle);
 elements.viewHistoryButton.addEventListener("click", () => showView("history"));
 elements.historyBackButton.addEventListener("click", () => showView("dashboard"));
@@ -493,6 +585,5 @@ elements.financeForm.addEventListener("submit", handleFinanceSubmit);
 elements.dailyExpenseForm.addEventListener("submit", handleDailyExpenseSubmit);
 elements.goalsForm.addEventListener("submit", handleGoalsSubmit);
 elements.resetData.addEventListener("click", resetData);
-elements.cancelEditButton.addEventListener("click", clearFixedPaymentForm);
 
 renderApp();

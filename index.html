@@ -16,12 +16,11 @@
           <p class="eyebrow">Personal finance command center</p>
           <h1 id="app-title">SpendWize</h1>
           <p class="hero-copy">
-            Track daily purchases, fixed payments, saving goals, and money left to spend in a clean monthly view.
+            Track daily purchases, fixed payments, credit card usage, saving goals, and money left to spend in a clean monthly view.
           </p>
         </div>
         <nav class="hero-actions" aria-label="App navigation">
-          <button id="showDashboardButton" class="ghost-action hidden" type="button">Back to dashboard</button>
-          <button id="toggleInterface" class="primary-action" type="button">Open fixed payments</button>
+          <button id="toggleInterface" class="primary-action" type="button">Open advanced mode</button>
           <button id="viewHistoryButton" class="ghost-action" type="button">Transaction history</button>
         </nav>
       </section>
@@ -65,6 +64,13 @@
                 Cost
                 <input id="dailyExpenseAmount" name="dailyExpenseAmount" type="number" min="0" step="0.01" placeholder="12.50" />
               </label>
+              <label>
+                Paid with credit card?
+                <select id="dailyExpenseCredit" name="dailyExpenseCredit">
+                  <option value="false">No, cash/debit</option>
+                  <option value="true">Yes, credit card</option>
+                </select>
+              </label>
               <button class="secondary-action" type="submit">Add and auto-sort</button>
             </form>
             <p id="autoSortMessage" class="auto-sort-message" role="status" aria-live="polite"></p>
@@ -92,6 +98,7 @@
               <p><strong id="savingsGoalDisplay">$0.00</strong><span>monthly saving goal</span></p>
               <p><strong id="dailyBudgetDisplay">$0.00</strong><span>daily spending budget</span></p>
               <p><strong id="averageDailyDisplay">$0.00</strong><span>average daily spend this month</span></p>
+              <p><strong id="creditAvailableDisplay">$0.00</strong><span>credit available this month</span></p>
             </div>
           </article>
         </div>
@@ -127,9 +134,9 @@
       <section id="editorView" class="interface" aria-labelledby="editor-title">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Fixed payments</p>
-            <h2 id="editor-title">Monthly and yearly commitments</h2>
-            <p class="section-copy">Use this page for rent, electricity, subscriptions, insurance, tuition, and other recurring payments.</p>
+            <p class="eyebrow">Advanced mode</p>
+            <h2 id="editor-title">Fixed payments and credit card tracking</h2>
+            <p class="section-copy">Use advanced mode for rent, electricity, subscriptions, insurance, tuition, and monthly credit card payback planning.</p>
           </div>
           <button id="resetData" class="ghost-action" type="button">Reset demo data</button>
         </div>
@@ -148,7 +155,21 @@
           </fieldset>
 
           <fieldset class="panel form-panel">
-            <legend>Add or edit fixed payment</legend>
+            <legend>Credit card tracking</legend>
+            <label>
+              Monthly credit limit
+              <input id="creditLimitInput" name="creditLimit" type="number" min="0" step="0.01" placeholder="1500" />
+            </label>
+            <label>
+              Amount to pay back this month
+              <input id="creditPaybackInput" name="creditPayback" type="number" min="0" step="0.01" placeholder="250" />
+            </label>
+            <p id="creditStatus" class="panel-copy compact">Credit card payback is subtracted from money left to spend.</p>
+            <button class="secondary-action" type="submit">Save income and credit settings</button>
+          </fieldset>
+
+          <fieldset class="panel form-panel">
+            <legend>Add fixed payment</legend>
             <label>
               Payment name
               <input id="expenseName" name="expenseName" type="text" placeholder="Rent, electricity, car insurance" />
@@ -171,13 +192,15 @@
               <input id="expenseAmount" name="expenseAmount" type="number" min="0" step="0.01" placeholder="1200" />
             </label>
             <button id="saveExpenseButton" class="secondary-action" type="submit">Save fixed payment</button>
-            <button id="cancelEditButton" class="ghost-action hidden" type="button">Cancel edit</button>
           </fieldset>
         </form>
 
         <article class="panel expense-panel">
           <div class="panel-heading">
-            <h3>Fixed payments</h3>
+            <div>
+              <h3>Fixed payments</h3>
+              <p class="panel-copy compact">Click edit to update a payment directly in this list.</p>
+            </div>
             <span id="expenseCount" class="pill">0 items</span>
           </div>
           <ul id="expenseList" class="expense-list"></ul>
