@@ -34,16 +34,36 @@
           <p id="lastUpdated" class="muted">Ready for your first update</p>
         </div>
 
-        <div class="metrics-grid compact-metrics" aria-label="Financial summary">
+        <div class="metrics-grid dashboard-metrics" aria-label="Financial summary">
+          <article class="metric-card balance">
+            <span>Total balance</span>
+            <strong id="totalBalance">$0.00</strong>
+            <small id="totalBalanceHint">After-tax income minus saving goal</small>
+          </article>
           <article class="metric-card spending">
             <span>Total amount spent</span>
             <strong id="totalSpending">$0.00</strong>
-            <small id="totalSpendingHint">Daily purchases + monthly value of fixed payments</small>
+            <small id="totalSpendingHint">Fixed spending + regular expenditures</small>
+          </article>
+          <article class="metric-card fixed">
+            <span>Fixed spending</span>
+            <strong id="fixedSpending">$0.00</strong>
+            <small id="fixedSpendingHint">Monthly value of rent, utilities, subscriptions, and yearly payments</small>
+          </article>
+          <article class="metric-card regular">
+            <span>Regular expenditures</span>
+            <strong id="regularSpending">$0.00</strong>
+            <small id="regularSpendingHint">Daily purchases entered this month</small>
           </article>
           <article class="metric-card remaining">
-            <span>Money left to spend</span>
+            <span>Left to spend this month</span>
             <strong id="moneyLeft">$0.00</strong>
-            <small id="remainingHint">After taxes, fixed payments, daily spend, and saving goal</small>
+            <small id="remainingHint">After fixed spending, regular expenditures, credit payback, and saving goal</small>
+          </article>
+          <article class="metric-card day-left">
+            <span>Left to spend today</span>
+            <strong id="moneyLeftToday">$0.00</strong>
+            <small id="dailyRemainingHint">Based on your daily spending budget</small>
           </article>
         </div>
 

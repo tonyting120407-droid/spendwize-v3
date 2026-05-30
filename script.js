@@ -47,10 +47,18 @@ const elements = {
   editorView: document.querySelector("#editorView"),
   historyView: document.querySelector("#historyView"),
   historyBackButton: document.querySelector("#historyBackButton"),
+  totalBalance: document.querySelector("#totalBalance"),
+  totalBalanceHint: document.querySelector("#totalBalanceHint"),
   totalSpending: document.querySelector("#totalSpending"),
   totalSpendingHint: document.querySelector("#totalSpendingHint"),
+  fixedSpending: document.querySelector("#fixedSpending"),
+  fixedSpendingHint: document.querySelector("#fixedSpendingHint"),
+  regularSpending: document.querySelector("#regularSpending"),
+  regularSpendingHint: document.querySelector("#regularSpendingHint"),
   moneyLeft: document.querySelector("#moneyLeft"),
+  moneyLeftToday: document.querySelector("#moneyLeftToday"),
   remainingHint: document.querySelector("#remainingHint"),
+  dailyRemainingHint: document.querySelector("#dailyRemainingHint"),
   lastUpdated: document.querySelector("#lastUpdated"),
   categoryBreakdown: document.querySelector("#categoryBreakdown"),
   categoryCount: document.querySelector("#categoryCount"),
@@ -162,19 +170,25 @@ function getSortedExpenses(expenses) {
 
 function calculateSummary() {
   const dailyExpenses = getDailyExpenses();
+  const todayKey = new Date().toDateString();
   const dailySpent = dailyExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+  const todaySpent = dailyExpenses
+    .filter((expense) => new Date(expense.date).toDateString() === todayKey)
+    .reduce((sum, expense) => sum + Number(expense.amount), 0);
   const creditSpent = dailyExpenses.filter((expense) => expense.paidWithCredit).reduce((sum, expense) => sum + Number(expense.amount), 0);
   const cashDailySpent = dailySpent - creditSpent;
   const fixedMonthlyTotal = getFixedPayments().reduce((sum, expense) => sum + monthlyValue(expense), 0);
   const totalSpent = dailySpent + fixedMonthlyTotal;
   const afterTaxes = Math.max(state.income - state.income * (state.taxRate / 100), 0);
+  const totalBalance = afterTaxes - state.savingsGoal;
   const creditAvailable = Math.max(state.creditLimit - creditSpent, 0);
   const creditOverage = Math.max(creditSpent - state.creditLimit, 0);
   const cashCommitted = fixedMonthlyTotal + cashDailySpent + state.creditPayback + state.savingsGoal;
   const moneyLeft = afterTaxes - cashCommitted;
+  const moneyLeftToday = state.dailyBudget > 0 ? state.dailyBudget - todaySpent : 0;
   const averageDailySpend = dailySpent / new Date().getDate();
 
-  return { afterTaxes, dailySpent, creditSpent, cashDailySpent, fixedMonthlyTotal, totalSpent, creditAvailable, creditOverage, cashCommitted, moneyLeft, averageDailySpend };
+  return { afterTaxes, totalBalance, dailySpent, todaySpent, creditSpent, cashDailySpent, fixedMonthlyTotal, totalSpent, creditAvailable, creditOverage, cashCommitted, moneyLeft, moneyLeftToday, averageDailySpend };
 }
 
 function categorizeExpense(itemName) {
@@ -202,14 +216,23 @@ function populateCategoryOptions(select = elements.expenseCategory, selectedCate
 }
 
 function renderDashboard() {
-  const { afterTaxes, dailySpent, creditSpent, cashDailySpent, fixedMonthlyTotal, totalSpent, creditAvailable, creditOverage, cashCommitted, moneyLeft, averageDailySpend } = calculateSummary();
+  const { afterTaxes, totalBalance, dailySpent, todaySpent, creditSpent, cashDailySpent, fixedMonthlyTotal, totalSpent, creditAvailable, creditOverage, cashCommitted, moneyLeft, moneyLeftToday, averageDailySpend } = calculateSummary();
   const spendingRatio = afterTaxes > 0 ? Math.min((cashCommitted / afterTaxes) * 100, 100) : 0;
 
+  elements.totalBalance.textContent = currency(totalBalance);
+  elements.totalBalanceHint.textContent = `${currency(afterTaxes)} after taxes - ${currency(state.savingsGoal)} saving goal`;
   elements.totalSpending.textContent = currency(totalSpent);
-  elements.totalSpendingHint.textContent = `${currency(dailySpent)} daily (${currency(creditSpent)} on credit) + ${currency(fixedMonthlyTotal)} fixed payments`;
+  elements.totalSpendingHint.textContent = `${currency(fixedMonthlyTotal)} fixed + ${currency(dailySpent)} regular expenditures`;
+  elements.fixedSpending.textContent = currency(fixedMonthlyTotal);
+  elements.fixedSpendingHint.textContent = "Monthly value of all fixed payments";
+  elements.regularSpending.textContent = currency(dailySpent);
+  elements.regularSpendingHint.textContent = `${currency(creditSpent)} credit card + ${currency(cashDailySpent)} cash/debit purchases`;
   elements.moneyLeft.textContent = currency(moneyLeft);
-  elements.remainingHint.textContent = `${currency(cashDailySpent)} cash/debit daily + ${currency(state.creditPayback)} credit payback + fixed payments + saving goal`;
+  elements.moneyLeftToday.textContent = state.dailyBudget > 0 ? currency(moneyLeftToday) : "Set budget";
+  elements.remainingHint.textContent = `${currency(cashDailySpent)} cash/debit daily + ${currency(state.creditPayback)} credit payback + fixed spending + saving goal`;
+  elements.dailyRemainingHint.textContent = state.dailyBudget > 0 ? `${currency(todaySpent)} spent today from ${currency(state.dailyBudget)} daily budget` : "Add a daily budget in goals";
   elements.moneyLeft.closest(".metric-card").classList.toggle("negative", moneyLeft < 0);
+  elements.moneyLeftToday.closest(".metric-card").classList.toggle("negative", moneyLeftToday < 0 && state.dailyBudget > 0);
   elements.lastUpdated.textContent = `Last updated ${new Date(state.updatedAt).toLocaleString()}`;
 
   elements.savingsGoalInput.value = state.savingsGoal || "";

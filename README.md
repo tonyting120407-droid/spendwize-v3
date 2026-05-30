@@ -4,7 +4,7 @@ SpendWize is a lightweight personal finance web app for tracking daily expenditu
 
 ## Features
 
-- Dashboard summary focused on total amount spent and money left to spend.
+- Dashboard summary separates total balance, total spending, fixed spending, regular expenditures, money left for the month, and money left for the day.
 - Daily expenditure form that auto-sorts purchases into categories and lets users mark whether each purchase was paid by credit card.
 - Advanced mode for recurring monthly or yearly expenses such as rent, electric fees, insurance, subscriptions, and loans.
 - Inline fixed-payment editing so users can update the exact payment row they clicked.
